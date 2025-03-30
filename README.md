@@ -11,9 +11,8 @@ Secure Token Storage: Uses EncryptedSharedPreferences for storing authentication
 Logout Functionality: Clears the token and redirects to the login screen.
 
 Optional Features (Bonus):
-
 Dark Mode
-
+Search/Filter functionality
 
 ScreenShots
 ![WhatsApp Image 2025-01-21 at 12 42 25 PM (1)](https://github.com/user-attachments/assets/2a93c10a-a628-4165-8883-df6799e38f94)
