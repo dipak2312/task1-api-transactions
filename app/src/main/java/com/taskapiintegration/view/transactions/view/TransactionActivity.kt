@@ -3,6 +3,7 @@ package com.taskapiintegration.view.transactions.view
 import android.content.Intent
 import android.os.Bundle
 import android.widget.Toast
+import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.biometric.BiometricPrompt
 import com.taskapiintegration.adapter.TransactionListAdapter
@@ -10,42 +11,41 @@ import com.taskapiintegration.constants.ConstantsSP
 import com.taskapiintegration.databinding.ActivityTransactionBinding
 import com.taskapiintegration.utils.SharedPreference
 import com.taskapiintegration.view.login.view.LoginActivity
-import com.taskapiintegration.view.transactions.data.TransactionItem
-import com.taskapiintegration.view.transactions.interactor.TransactionInteractor
-import com.taskapiintegration.view.transactions.model.TransactionContract
-import com.taskapiintegration.view.transactions.presenter.TransactionPresenter
+import com.taskapiintegration.view.transactions.viewmodel.TransactionViewModel
 import java.util.concurrent.Executors
 
-class TransactionActivity : AppCompatActivity(), TransactionContract.View {
+class TransactionActivity : AppCompatActivity() {
     private lateinit var binding: ActivityTransactionBinding
-    private lateinit var adapter : TransactionListAdapter
-    private lateinit var presenter: TransactionPresenter
+    private lateinit var adapter: TransactionListAdapter
+
+    private val transactionViewModel: TransactionViewModel by viewModels()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityTransactionBinding.inflate(layoutInflater)
         setContentView(binding.root)
-        showBiometricPrompt()
-        onClick()
 
+        adapter = TransactionListAdapter(this)
+        binding.recyTransactionHistory.adapter = adapter
+
+        showBiometricPrompt()
+        observeViewModel()
+        onClick()
     }
 
     private fun onClick() {
         binding.buttonLogout.setOnClickListener {
             SharedPreference.remove(this, ConstantsSP.ACCESS_TOKEN)
-            val intent = Intent(this@TransactionActivity, LoginActivity::class.java)
-            startActivity(intent)
+            startActivity(Intent(this@TransactionActivity, LoginActivity::class.java))
             finish()
         }
-
     }
+
     private fun showBiometricPrompt() {
         val biometricPrompt = BiometricPrompt(this, Executors.newSingleThreadExecutor(), object : BiometricPrompt.AuthenticationCallback() {
             override fun onAuthenticationSucceeded(result: BiometricPrompt.AuthenticationResult) {
                 super.onAuthenticationSucceeded(result)
-                // Proceed to fetch transactions
-                getControl()
-
+                getTransactions()
             }
 
             override fun onAuthenticationFailed() {
@@ -63,24 +63,21 @@ class TransactionActivity : AppCompatActivity(), TransactionContract.View {
 
         biometricPrompt.authenticate(promptInfo)
     }
-    private fun getControl() {
-        presenter = TransactionPresenter(this@TransactionActivity, TransactionInteractor())
-        presenter.getTransactionList(this@TransactionActivity)
-        adapter = TransactionListAdapter(this)
-        runOnUiThread {
-            binding.recyTransactionHistory.adapter = adapter
+
+    private fun getTransactions() {
+        val token = SharedPreference.getString(this, ConstantsSP.ACCESS_TOKEN)
+        if (!token.isNullOrEmpty()) {
+            transactionViewModel.fetchTransactions(token)
+        }
+    }
+
+    private fun observeViewModel() {
+        transactionViewModel.transactions.observe(this) { transactions ->
+            adapter.addAllItem(transactions)
         }
 
-    }
-
-    override fun showErrorDialog(error: String, message: String) {
-
-    }
-
-    override fun transactionSuccess(transaction:List<TransactionItem>) {
-        if (transaction.size != null){
-            val expenses = listOf(transaction)
-            adapter.addAllItem(transaction)
+        transactionViewModel.errorMessage.observe(this) { message ->
+            Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
         }
     }
 }

@@ -2,53 +2,55 @@ package com.taskapiintegration.view.login.view
 
 import android.content.Intent
 import android.os.Bundle
+import android.widget.Toast
+import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
+import androidx.lifecycle.Observer
 import com.taskapiintegration.constants.ConstantsSP
 import com.taskapiintegration.databinding.ActivityLoginBinding
+import com.taskapiintegration.repository.LoginRepository
 import com.taskapiintegration.utils.SharedPreference
 import com.taskapiintegration.view.login.data.LoginResponse
-import com.taskapiintegration.view.login.interactor.LoginInteractor
-import com.taskapiintegration.view.login.model.LoginContract
-import com.taskapiintegration.view.login.presenter.LoginPresenter
 import com.taskapiintegration.view.transactions.view.TransactionActivity
+import com.taskapiintegration.view.login.viewmodel.LoginViewModel
 
-class LoginActivity : AppCompatActivity(), LoginContract.View {
+class LoginActivity : AppCompatActivity() {
     private lateinit var binding: ActivityLoginBinding
-    private lateinit var presenter: LoginPresenter
+    private val loginViewModel: LoginViewModel by viewModels()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityLoginBinding.inflate(layoutInflater)
         setContentView(binding.root)
-        onClick()
-        getControl()
-    }
-    private fun getControl(){
-        presenter = LoginPresenter(this@LoginActivity, LoginInteractor())
+
+        setupObservers()
+        setupClickListeners()
     }
 
-    private fun onClick() {
+    private fun setupClickListeners() {
         binding.buttonLogin.setOnClickListener {
-            presenter.login(binding)
+            val userName = binding.userName.text.toString()
+            val password = binding.password.text.toString()
+            loginViewModel.login(userName, password)
         }
     }
 
-
-
-    override fun showErrorDialog(error: String, message: String) {
-
+    private fun setupObservers() {
+        loginViewModel.loginResult.observe(this, Observer { result ->
+            result.onSuccess { loginSuccess(it) }
+            result.onFailure { showError(it.message ?: "Login failed") }
+        })
     }
 
-    override fun loginSuccess(loginResponse: LoginResponse) {
-        if (loginResponse.success){
-            if (loginResponse.token.isNotEmpty()){
-                SharedPreference.putString(this, ConstantsSP.ACCESS_TOKEN, loginResponse.token)
-                val intent = Intent(this@LoginActivity, TransactionActivity::class.java)
-                startActivity(intent)
-                finish()
-            }
-
+    private fun loginSuccess(loginResponse: LoginResponse) {
+        if (loginResponse.success && loginResponse.token.isNotEmpty()) {
+            SharedPreference.putString(this, ConstantsSP.ACCESS_TOKEN, loginResponse.token)
+            startActivity(Intent(this, TransactionActivity::class.java))
+            finish()
         }
     }
 
+    private fun showError(error: String) {
+        Toast.makeText(this, error, Toast.LENGTH_SHORT).show()
+    }
 }
