@@ -76,5 +76,6 @@ dependencies {
     implementation ("io.reactivex.rxjava2:rxandroid:2.0.2")
     implementation ("com.squareup.retrofit2:adapter-rxjava2:2.9.0")
     implementation ("androidx.cardview:cardview:1.0.0")
+    implementation ("androidx.security:security-crypto:1.1.0-alpha06")
 
 }

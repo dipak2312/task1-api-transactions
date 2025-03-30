@@ -2,14 +2,14 @@ package com.taskapiintegration.view.transactions.view
 
 import android.content.Intent
 import android.os.Bundle
+import android.widget.SearchView
 import android.widget.Toast
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.biometric.BiometricPrompt
 import com.taskapiintegration.adapter.TransactionListAdapter
-import com.taskapiintegration.constants.ConstantsSP
 import com.taskapiintegration.databinding.ActivityTransactionBinding
-import com.taskapiintegration.utils.SharedPreference
+import com.taskapiintegration.utils.SecurePrefs
 import com.taskapiintegration.view.login.view.LoginActivity
 import com.taskapiintegration.view.transactions.viewmodel.TransactionViewModel
 import java.util.concurrent.Executors
@@ -35,7 +35,7 @@ class TransactionActivity : AppCompatActivity() {
 
     private fun onClick() {
         binding.buttonLogout.setOnClickListener {
-            SharedPreference.remove(this, ConstantsSP.ACCESS_TOKEN)
+            SecurePrefs.clearToken(this)
             startActivity(Intent(this@TransactionActivity, LoginActivity::class.java))
             finish()
         }
@@ -65,10 +65,12 @@ class TransactionActivity : AppCompatActivity() {
     }
 
     private fun getTransactions() {
-        val token = SharedPreference.getString(this, ConstantsSP.ACCESS_TOKEN)
+        val token = SecurePrefs.getToken(this)
         if (!token.isNullOrEmpty()) {
             transactionViewModel.fetchTransactions(token)
         }
+
+        setupSearch()
     }
 
     private fun observeViewModel() {
@@ -79,5 +81,19 @@ class TransactionActivity : AppCompatActivity() {
         transactionViewModel.errorMessage.observe(this) { message ->
             Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
         }
+    }
+
+    private fun setupSearch() {
+        binding.searchView.setOnQueryTextListener(object : SearchView.OnQueryTextListener {
+            override fun onQueryTextSubmit(query: String?): Boolean {
+                adapter.filter.filter(query)
+                return false
+            }
+
+            override fun onQueryTextChange(newText: String?): Boolean {
+                adapter.filter.filter(newText)
+                return false
+            }
+        })
     }
 }

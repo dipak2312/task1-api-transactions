@@ -9,7 +9,7 @@ import androidx.lifecycle.Observer
 import com.taskapiintegration.constants.ConstantsSP
 import com.taskapiintegration.databinding.ActivityLoginBinding
 import com.taskapiintegration.repository.LoginRepository
-import com.taskapiintegration.utils.SharedPreference
+import com.taskapiintegration.utils.SecurePrefs
 import com.taskapiintegration.view.login.data.LoginResponse
 import com.taskapiintegration.view.transactions.view.TransactionActivity
 import com.taskapiintegration.view.login.viewmodel.LoginViewModel
@@ -44,7 +44,7 @@ class LoginActivity : AppCompatActivity() {
 
     private fun loginSuccess(loginResponse: LoginResponse) {
         if (loginResponse.success && loginResponse.token.isNotEmpty()) {
-            SharedPreference.putString(this, ConstantsSP.ACCESS_TOKEN, loginResponse.token)
+            SecurePrefs.saveToken(this@LoginActivity, loginResponse.token)
             startActivity(Intent(this, TransactionActivity::class.java))
             finish()
         }
